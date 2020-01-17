@@ -34,6 +34,13 @@ paths:
       description: ''
       operationId: createPet
       responses:
+        '200':
+          description: This is a sample
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: 'whoa!'
         '405':
           description: Invalid input
       security:

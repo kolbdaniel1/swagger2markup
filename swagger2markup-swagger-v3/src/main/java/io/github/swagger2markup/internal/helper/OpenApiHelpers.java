@@ -2,6 +2,7 @@ package io.github.swagger2markup.internal.helper;
 
 import io.github.swagger2markup.adoc.ast.impl.*;
 import io.swagger.v3.oas.models.ExternalDocumentation;
+import io.swagger.v3.oas.models.examples.Example;
 import io.swagger.v3.oas.models.headers.Header;
 import io.swagger.v3.oas.models.links.Link;
 import io.swagger.v3.oas.models.media.Content;
@@ -21,8 +22,10 @@ import static io.github.swagger2markup.adoc.converter.internal.Delimiters.*;
 
 public class OpenApiHelpers {
 
+    public static final String LABEL_CONTENT = "Content";
     public static final String LABEL_DEFAULT = "Default";
     public static final String LABEL_DEPRECATED = "Deprecated";
+    public static final String LABEL_EXAMPLE = "Example";
     public static final String LABEL_EXCLUSIVE_MAXIMUM = "Exclusive Maximum";
     public static final String LABEL_EXCLUSIVE_MINIMUM = "Exclusive Minimum";
     public static final String LABEL_FORMAT = "Format";
@@ -255,24 +258,35 @@ public class OpenApiHelpers {
     static void appendMediaContent(StructuralNode node, Content content) {
         if (content == null || content.isEmpty()) return;
 
-        DescriptionListImpl tagsList = new DescriptionListImpl(node);
-        tagsList.setTitle("Content");
+        DescriptionListImpl mediaContentList = new DescriptionListImpl(node);
+        mediaContentList.setTitle(LABEL_CONTENT);
 
         content.forEach((type, mediaType) -> {
-            DescriptionListEntryImpl tagEntry = new DescriptionListEntryImpl(tagsList, Collections.singletonList(new ListItemImpl(tagsList, type)));
+            DescriptionListEntryImpl tagEntry = new DescriptionListEntryImpl(mediaContentList, Collections.singletonList(new ListItemImpl(mediaContentList, type)));
             ListItemImpl tagDesc = new ListItemImpl(tagEntry, "");
             tagDesc.append(generateSchemaDocument(node,  mediaType.getSchema()));
             appendMediaTypeExample(tagDesc, mediaType.getExample());
+            appendExamples(tagDesc, mediaType.getExamples());
             tagEntry.setDescription(tagDesc);
-            tagsList.addEntry(tagEntry);
+            mediaContentList.addEntry(tagEntry);
         });
-        node.append(tagsList);
+        node.append(mediaContentList);
+    }
+
+    static void appendExamples(StructuralNode node, Map<String, Example> examples) {
+        if (examples == null || examples.isEmpty()) return;
+
+        examples.forEach((s, example) -> {
+
+        });
     }
 
     static void appendMediaTypeExample(StructuralNode node, Object example){
         if (example == null || StringUtils.isBlank(example.toString())) return;
 
         ParagraphBlockImpl sourceBlock = new ParagraphBlockImpl(node);
+        sourceBlock.setTitle(LABEL_EXAMPLE);
+        sourceBlock.setAttribute("style", "source", true);
         sourceBlock.setSource(DELIMITER_BLOCK + LINE_SEPARATOR + example + LINE_SEPARATOR + DELIMITER_BLOCK);
         node.append(sourceBlock);
     }
