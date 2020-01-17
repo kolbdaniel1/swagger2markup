@@ -178,6 +178,17 @@ __optional__
 
 <.<|successful operation
 
+.Content
+application/json::
++
+
+<<_components_schemas_PetArray,PetArray>>
+
+application/xml::
++
+
+<<_components_schemas_PetArray,PetArray>>
+
 
 <.<|No Links
 
@@ -246,6 +257,17 @@ __optional__
 
 
 <.<|successful operation
+
+.Content
+application/json::
++
+
+type: array
+
+application/xml::
++
+
+type: array
 
 
 <.<|No Links
@@ -316,6 +338,17 @@ format: int64
 
 
 <.<|successful operation
+
+.Content
+application/json::
++
+
+<<_components_schemas_Pet,Pet>>
+
+application/xml::
++
+
+<<_components_schemas_Pet,Pet>>
 
 
 <.<|No Links
@@ -522,6 +555,12 @@ format: int64
 
 <.<|successful operation
 
+.Content
+application/json::
++
+
+<<_components_schemas_ApiResponse,ApiResponse>>
+
 
 <.<|No Links
 
@@ -550,6 +589,17 @@ Returns a map of status codes to quantities
 
 <.<|successful operation
 
+.Content
+application/json::
++
+
+type: object
+
+application/xml::
++
+
+type: object
+
 
 <.<|No Links
 
@@ -575,6 +625,17 @@ Returns a map of status codes to quantities
 
 
 <.<|successful operation
+
+.Content
+application/json::
++
+
+<<_components_schemas_Order,Order>>
+
+application/xml::
++
+
+<<_components_schemas_Order,Order>>
 
 
 <.<|No Links
@@ -644,6 +705,17 @@ __required__
 
 
 <.<|successful operation
+
+.Content
+application/json::
++
+
+<<_components_schemas_Order,Order>>
+
+application/xml::
++
+
+<<_components_schemas_Order,Order>>
 
 
 <.<|No Links
@@ -885,6 +957,17 @@ __optional__
 
 <.<|successful operation
 
+.Content
+application/json::
++
+
+type: string
+
+application/xml::
++
+
+type: string
+
 
 <.<|No Links
 
@@ -977,6 +1060,17 @@ __required__
 
 
 <.<|successful operation
+
+.Content
+application/json::
++
+
+<<_components_schemas_User,User>>
+
+application/xml::
++
+
+<<_components_schemas_User,User>>
 
 
 <.<|No Links

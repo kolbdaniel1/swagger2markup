@@ -1,26 +1,23 @@
 package io.github.swagger2markup.internal.helper;
 
-import io.github.swagger2markup.adoc.ast.impl.DocumentImpl;
-import io.github.swagger2markup.adoc.ast.impl.ParagraphBlockImpl;
-import io.github.swagger2markup.adoc.ast.impl.TableImpl;
+import io.github.swagger2markup.adoc.ast.impl.*;
 import io.swagger.v3.oas.models.ExternalDocumentation;
 import io.swagger.v3.oas.models.headers.Header;
 import io.swagger.v3.oas.models.links.Link;
+import io.swagger.v3.oas.models.media.Content;
 import io.swagger.v3.oas.models.media.Schema;
 import io.swagger.v3.oas.models.parameters.Parameter;
 import io.swagger.v3.oas.models.parameters.RequestBody;
 import io.swagger.v3.oas.models.responses.ApiResponse;
 import org.apache.commons.lang3.StringUtils;
-import org.asciidoctor.ast.Block;
-import org.asciidoctor.ast.Document;
-import org.asciidoctor.ast.StructuralNode;
-import org.asciidoctor.ast.Table;
+import org.asciidoctor.ast.*;
 
 import java.util.*;
+import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static io.github.swagger2markup.adoc.converter.internal.Delimiters.LINE_SEPARATOR;
+import static io.github.swagger2markup.adoc.converter.internal.Delimiters.*;
 
 public class OpenApiHelpers {
 
@@ -251,7 +248,33 @@ public class OpenApiHelpers {
     static Document getResponseDescriptionColumnDocument(Table table, ApiResponse apiResponse) {
         Document document = generateInnerDoc(table, Optional.ofNullable(apiResponse.getDescription()).orElse(""));
         appendHeadersTable(document, apiResponse.getHeaders());
+        appendMediaContent(document, apiResponse.getContent());
         return document;
+    }
+
+    static void appendMediaContent(StructuralNode node, Content content) {
+        if (content == null || content.isEmpty()) return;
+
+        DescriptionListImpl tagsList = new DescriptionListImpl(node);
+        tagsList.setTitle("Content");
+
+        content.forEach((type, mediaType) -> {
+            DescriptionListEntryImpl tagEntry = new DescriptionListEntryImpl(tagsList, Collections.singletonList(new ListItemImpl(tagsList, type)));
+            ListItemImpl tagDesc = new ListItemImpl(tagEntry, "");
+            tagDesc.append(generateSchemaDocument(node,  mediaType.getSchema()));
+            appendMediaTypeExample(tagDesc, mediaType.getExample());
+            tagEntry.setDescription(tagDesc);
+            tagsList.addEntry(tagEntry);
+        });
+        node.append(tagsList);
+    }
+
+    static void appendMediaTypeExample(StructuralNode node, Object example){
+        if (example == null || StringUtils.isBlank(example.toString())) return;
+
+        ParagraphBlockImpl sourceBlock = new ParagraphBlockImpl(node);
+        sourceBlock.setSource(DELIMITER_BLOCK + LINE_SEPARATOR + example + LINE_SEPARATOR + DELIMITER_BLOCK);
+        node.append(sourceBlock);
     }
 
     private static Document getParameterNameDocument(Table table, Parameter parameter) {
