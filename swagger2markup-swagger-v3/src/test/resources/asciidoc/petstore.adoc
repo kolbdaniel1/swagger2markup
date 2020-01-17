@@ -53,7 +53,6 @@ text/plain::
 
 type: string
 
-+
 .Example
 [source]
 ----
@@ -849,6 +848,51 @@ This can only be done by the logged in user.
 
 
 <.<|Links
+
+
+
+<.<|200
+
+
+<.<|.Content
+application/json::
++
+
+type: object
+
+.Properties
+[%header,caption=,cols=".^4a,.^16a"]
+!===
+<.<!Name
+
+<.<!Schema
+
+<.<!id
+__optional__
+
+<.<!type: string +
+format: text
+
+!===
+.Examples
+foo::
++
+.Example
+[source]
+----
+{"foo":"bar"}
+----
+
+bar::
++
+.Example
+[source]
+----
+{"bar":"baz"}
+----
+
+
+<.<|No Links
 
 
 

@@ -26,8 +26,10 @@ public class OpenApiHelpers {
     public static final String LABEL_DEFAULT = "Default";
     public static final String LABEL_DEPRECATED = "Deprecated";
     public static final String LABEL_EXAMPLE = "Example";
+    public static final String LABEL_EXAMPLES = "Examples";
     public static final String LABEL_EXCLUSIVE_MAXIMUM = "Exclusive Maximum";
     public static final String LABEL_EXCLUSIVE_MINIMUM = "Exclusive Minimum";
+    public static final String LABEL_EXTERNAL_VALUE = "External Value";
     public static final String LABEL_FORMAT = "Format";
     public static final String LABEL_MAXIMUM = "Maximum";
     public static final String LABEL_MAX_ITEMS = "Maximum Items";
@@ -94,9 +96,7 @@ public class OpenApiHelpers {
                 Map<String, String> parameters = link.getParameters();
                 if (null != parameters && !parameters.isEmpty()) {
                     sb.append(italicUnconstrained(LABEL_PARAMETERS)).append(" {").append(" +").append(LINE_SEPARATOR);
-                    parameters.forEach((param, value) -> {
-                        sb.append('"').append(param).append("\": \"").append(value).append('"').append(" +").append(LINE_SEPARATOR);
-                    });
+                    parameters.forEach((param, value) -> sb.append('"').append(param).append("\": \"").append(value).append('"').append(" +").append(LINE_SEPARATOR));
                     sb.append('}').append(" +").append(LINE_SEPARATOR);
                 }
             });
@@ -147,17 +147,23 @@ public class OpenApiHelpers {
 
         ParagraphBlockImpl paragraphBlock = new ParagraphBlockImpl(schemaDocument);
         String source = Stream.concat(schemaBooleanStream, schemaValueStream).collect(Collectors.joining(" +" + LINE_SEPARATOR));
-        String ref = schema.get$ref();
-        if (StringUtils.isNotBlank(ref)) {
-            String alt = ref.substring(ref.lastIndexOf('/') + 1);
-            String anchor = ref.replaceFirst("#", "").replaceAll("/", "_");
-            source += "<<" + anchor + "," + alt + ">>" + LINE_SEPARATOR;
-        }
+        source = generateRefLink(source, schema.get$ref(), "");
         paragraphBlock.setSource(source);
 
         schemaDocument.append(paragraphBlock);
         appendPropertiesTable(schemaDocument, schema.getProperties(), schema.getRequired());
         return schemaDocument;
+    }
+
+    private static String generateRefLink(String source, String ref, String alt) {
+        if (StringUtils.isNotBlank(ref)) {
+            if (StringUtils.isBlank(alt)) {
+                alt = ref.substring(ref.lastIndexOf('/') + 1);
+            }
+            String anchor = ref.replaceFirst("#", "").replaceAll("/", "_");
+            source += "<<" + anchor + "," + alt + ">>" + LINE_SEPARATOR;
+        }
+        return source;
     }
 
     public static void appendPropertiesTable(StructuralNode parent, @SuppressWarnings("rawtypes") Map<String, Schema> properties, List<String> schemaRequired) {
@@ -172,12 +178,10 @@ public class OpenApiHelpers {
         propertiesTable.setTitle(TABLE_TITLE_PROPERTIES);
         propertiesTable.setHeaderRow(TABLE_HEADER_NAME, TABLE_HEADER_SCHEMA);
 
-        properties.forEach((name, schema) -> {
-            propertiesTable.addRow(
-                    generateInnerDoc(propertiesTable, name + LINE_SEPARATOR + requiredIndicator(finalSchemaRequired.contains(name))),
-                    generateSchemaDocument(propertiesTable, schema)
-            );
-        });
+        properties.forEach((name, schema) -> propertiesTable.addRow(
+                generateInnerDoc(propertiesTable, name + LINE_SEPARATOR + requiredIndicator(finalSchemaRequired.contains(name))),
+                generateSchemaDocument(propertiesTable, schema)
+        ));
         parent.append(propertiesTable);
     }
 
@@ -225,8 +229,8 @@ public class OpenApiHelpers {
         appendParameters(node, parameters.stream().collect(Collectors.toMap(Parameter::getName, parameter -> parameter)));
     }
 
-    static void appendRequestBody(StructuralNode node, RequestBody requestBody){
-        if(null == requestBody) return;
+    static void appendRequestBody(StructuralNode node, RequestBody requestBody) {
+        if (null == requestBody) return;
     }
 
     static void appendResponses(StructuralNode serverSection, Map<String, ApiResponse> apiResponses) {
@@ -238,13 +242,11 @@ public class OpenApiHelpers {
         pathResponsesTable.setTitle(TABLE_TITLE_RESPONSES);
         pathResponsesTable.setHeaderRow(TABLE_HEADER_HTTP_CODE, TABLE_HEADER_DESCRIPTION, TABLE_HEADER_LINKS);
 
-        apiResponses.forEach((httpCode, apiResponse) -> {
-            pathResponsesTable.addRow(
-                    generateInnerDoc(pathResponsesTable, httpCode),
-                    getResponseDescriptionColumnDocument(pathResponsesTable, apiResponse),
-                    generateLinksDocument(pathResponsesTable, apiResponse.getLinks())
-            );
-        });
+        apiResponses.forEach((httpCode, apiResponse) -> pathResponsesTable.addRow(
+                generateInnerDoc(pathResponsesTable, httpCode),
+                getResponseDescriptionColumnDocument(pathResponsesTable, apiResponse),
+                generateLinksDocument(pathResponsesTable, apiResponse.getLinks())
+        ));
         serverSection.append(pathResponsesTable);
     }
 
@@ -264,9 +266,10 @@ public class OpenApiHelpers {
         content.forEach((type, mediaType) -> {
             DescriptionListEntryImpl tagEntry = new DescriptionListEntryImpl(mediaContentList, Collections.singletonList(new ListItemImpl(mediaContentList, type)));
             ListItemImpl tagDesc = new ListItemImpl(tagEntry, "");
-            tagDesc.append(generateSchemaDocument(node,  mediaType.getSchema()));
-            appendMediaTypeExample(tagDesc, mediaType.getExample());
-            appendExamples(tagDesc, mediaType.getExamples());
+            Document document = generateSchemaDocument(mediaContentList, mediaType.getSchema());
+            appendMediaTypeExample(document, mediaType.getExample());
+            appendExamples(document, mediaType.getExamples());
+            tagDesc.append(document);
             tagEntry.setDescription(tagDesc);
             mediaContentList.addEntry(tagEntry);
         });
@@ -276,12 +279,36 @@ public class OpenApiHelpers {
     static void appendExamples(StructuralNode node, Map<String, Example> examples) {
         if (examples == null || examples.isEmpty()) return;
 
-        examples.forEach((s, example) -> {
+        DescriptionListImpl examplesList = new DescriptionListImpl(node);
+        examplesList.setTitle(LABEL_EXAMPLES);
 
+        examples.forEach((name, example) -> {
+            DescriptionListEntryImpl exampleEntry = new DescriptionListEntryImpl(examplesList, Collections.singletonList(new ListItemImpl(examplesList, name)));
+            ListItemImpl tagDesc = new ListItemImpl(exampleEntry, "");
+
+            ParagraphBlockImpl exampleBlock = new ParagraphBlockImpl(tagDesc);
+
+            appendDescription(exampleBlock, example.getSummary());
+            appendDescription(exampleBlock, example.getDescription());
+            appendMediaTypeExample(tagDesc, example.getValue());
+
+            ParagraphBlockImpl paragraphBlock = new ParagraphBlockImpl(tagDesc);
+            String source = "";
+            generateRefLink(source, example.getExternalValue(), LABEL_EXTERNAL_VALUE);
+            generateRefLink(source, example.get$ref(), "");
+            if(StringUtils.isNotBlank(source)){
+                paragraphBlock.setSource(source);
+                tagDesc.append(paragraphBlock);
+            }
+
+            exampleEntry.setDescription(tagDesc);
+
+            examplesList.addEntry(exampleEntry);
         });
+        node.append(examplesList);
     }
 
-    static void appendMediaTypeExample(StructuralNode node, Object example){
+    static void appendMediaTypeExample(StructuralNode node, Object example) {
         if (example == null || StringUtils.isBlank(example.toString())) return;
 
         ParagraphBlockImpl sourceBlock = new ParagraphBlockImpl(node);
@@ -316,7 +343,7 @@ public class OpenApiHelpers {
         return italicUnconstrained(isRequired ? LABEL_REQUIRED : LABEL_OPTIONAL).toLowerCase();
     }
 
-    public static void appendExternalDoc(StructuralNode node, ExternalDocumentation extDoc){
+    public static void appendExternalDoc(StructuralNode node, ExternalDocumentation extDoc) {
         if (extDoc == null) return;
 
         String url = extDoc.getUrl();
