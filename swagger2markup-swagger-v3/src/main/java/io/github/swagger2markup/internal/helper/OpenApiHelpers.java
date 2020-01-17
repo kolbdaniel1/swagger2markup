@@ -6,6 +6,7 @@ import io.swagger.v3.oas.models.examples.Example;
 import io.swagger.v3.oas.models.headers.Header;
 import io.swagger.v3.oas.models.links.Link;
 import io.swagger.v3.oas.models.media.Content;
+import io.swagger.v3.oas.models.media.Encoding;
 import io.swagger.v3.oas.models.media.Schema;
 import io.swagger.v3.oas.models.parameters.Parameter;
 import io.swagger.v3.oas.models.parameters.RequestBody;
@@ -266,14 +267,54 @@ public class OpenApiHelpers {
         content.forEach((type, mediaType) -> {
             DescriptionListEntryImpl tagEntry = new DescriptionListEntryImpl(mediaContentList, Collections.singletonList(new ListItemImpl(mediaContentList, type)));
             ListItemImpl tagDesc = new ListItemImpl(tagEntry, "");
+
             Document document = generateSchemaDocument(mediaContentList, mediaType.getSchema());
             appendMediaTypeExample(document, mediaType.getExample());
             appendExamples(document, mediaType.getExamples());
+            appendEncoding(document, mediaType.getEncoding());
             tagDesc.append(document);
+
             tagEntry.setDescription(tagDesc);
             mediaContentList.addEntry(tagEntry);
         });
         node.append(mediaContentList);
+    }
+
+    private static void appendEncoding(StructuralNode node, Map<String, Encoding> encodings) {
+        if (encodings == null || encodings.isEmpty()) return;
+
+        DescriptionListImpl encodingList = new DescriptionListImpl(node);
+        encodingList.setTitle(LABEL_EXAMPLES);
+
+        encodings.forEach((name, encoding) -> {
+            DescriptionListEntryImpl encodingEntry = new DescriptionListEntryImpl(encodingList, Collections.singletonList(new ListItemImpl(encodingList, name)));
+            ListItemImpl tagDesc = new ListItemImpl(encodingEntry, "");
+            ParagraphBlockImpl encodingBlock = new ParagraphBlockImpl(tagDesc);
+
+            StringBuilder sb = new StringBuilder();
+            String contentType = encoding.getContentType();
+            if(StringUtils.isNotBlank(contentType)){
+                sb.append("Content-Type:").append(contentType).append(LINE_SEPARATOR);
+            }
+            if(encoding.getAllowReserved()){
+                sb.append(italicUnconstrained("Allow Reserved").toLowerCase()).append(LINE_SEPARATOR);
+            }
+            if(encoding.getExplode()){
+                sb.append(italicUnconstrained("Explode").toLowerCase()).append(LINE_SEPARATOR);
+            }
+            Encoding.StyleEnum style = encoding.getStyle();
+            if(style != null){
+                sb.append("style").append(style).append(LINE_SEPARATOR);
+            }
+            encodingBlock.setSource(sb.toString());
+            tagDesc.append(encodingBlock);
+            appendHeadersTable(tagDesc, encoding.getHeaders());
+
+            encodingEntry.setDescription(tagDesc);
+
+            encodingList.addEntry(encodingEntry);
+        });
+        node.append(encodingList);
     }
 
     static void appendExamples(StructuralNode node, Map<String, Example> examples) {
