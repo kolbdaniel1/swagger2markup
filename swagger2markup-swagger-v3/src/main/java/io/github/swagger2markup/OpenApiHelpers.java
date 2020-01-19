@@ -10,6 +10,7 @@ import io.swagger.v3.oas.models.media.Schema;
 import io.swagger.v3.oas.models.parameters.Parameter;
 import io.swagger.v3.oas.models.parameters.RequestBody;
 import io.swagger.v3.oas.models.responses.ApiResponse;
+import io.swagger.v3.oas.models.security.SecurityRequirement;
 import org.apache.commons.lang3.StringUtils;
 import org.asciidoctor.ast.Block;
 import org.asciidoctor.ast.Document;
@@ -55,6 +56,7 @@ public class OpenApiHelpers {
     public static final String SECTION_TITLE_PARAMETERS = "Parameters";
     public static final String SECTION_TITLE_PATHS = "Paths";
     public static final String SECTION_TITLE_SCHEMAS = "Schemas";
+    public static final String SECTION_TITLE_SECURITY = "Security";
     public static final String SECTION_TITLE_SERVERS = "Servers";
     public static final String SECTION_TITLE_OVERVIEW = "Overview";
     public static final String SECTION_TITLE_TAGS = "Tags";
@@ -65,12 +67,14 @@ public class OpenApiHelpers {
     public static final String TABLE_HEADER_NAME = "Name";
     public static final String TABLE_HEADER_POSSIBLE_VALUES = "Possible Values";
     public static final String TABLE_HEADER_SCHEMA = "Schema";
+    public static final String TABLE_HEADER_SCOPES = "Scopes";
     public static final String TABLE_HEADER_TYPE = "Type";
     public static final String TABLE_HEADER_VARIABLE = "Variable";
     public static final String TABLE_TITLE_HEADERS = "Headers";
     public static final String TABLE_TITLE_PARAMETERS = "Parameters";
     public static final String TABLE_TITLE_PROPERTIES = "Properties";
     public static final String TABLE_TITLE_RESPONSES = "Responses";
+    public static final String TABLE_TITLE_SECURITY = "Security";
     public static final String TABLE_TITLE_SERVER_VARIABLES = "Server Variables";
 
     public static void appendDescription(StructuralNode node, String description) {
@@ -225,13 +229,13 @@ public class OpenApiHelpers {
         appendParameters(node, parameters.stream().collect(Collectors.toMap(Parameter::getName, parameter -> parameter)));
     }
 
-    static void appendRequestBody(StructuralNode node, RequestBody requestBody){
-        if(null == requestBody) return;
+    static void appendRequestBody(StructuralNode node, RequestBody requestBody) {
+        if (null == requestBody) return;
     }
 
-    static void appendResponses(StructuralNode serverSection, Map<String, ApiResponse> apiResponses) {
+    static void appendResponses(StructuralNode node, Map<String, ApiResponse> apiResponses) {
         if (null == apiResponses || apiResponses.isEmpty()) return;
-        TableImpl pathResponsesTable = new TableImpl(serverSection, new HashMap<>(), new ArrayList<>());
+        TableImpl pathResponsesTable = new TableImpl(node, new HashMap<>(), new ArrayList<>());
         pathResponsesTable.setOption("header");
         pathResponsesTable.setAttribute("caption", "", true);
         pathResponsesTable.setAttribute("cols", ".^2a,.^14a,.^4a", true);
@@ -245,7 +249,7 @@ public class OpenApiHelpers {
                     generateLinksDocument(pathResponsesTable, apiResponse.getLinks())
             );
         });
-        serverSection.append(pathResponsesTable);
+        node.append(pathResponsesTable);
     }
 
     static Document getResponseDescriptionColumnDocument(Table table, ApiResponse apiResponse) {
@@ -279,7 +283,7 @@ public class OpenApiHelpers {
         return italicUnconstrained(isRequired ? LABEL_REQUIRED : LABEL_OPTIONAL).toLowerCase();
     }
 
-    public static void appendExternalDoc(StructuralNode node, ExternalDocumentation extDoc){
+    public static void appendExternalDoc(StructuralNode node, ExternalDocumentation extDoc) {
         if (extDoc == null) return;
 
         String url = extDoc.getUrl();
@@ -289,6 +293,30 @@ public class OpenApiHelpers {
             paragraph.setSource(url + (StringUtils.isNotBlank(desc) ? "[" + desc + "]" : ""));
             node.append(paragraph);
         }
+    }
+
+    public static void appendSecurityRequirementTable(StructuralNode node, List<SecurityRequirement> securityRequirements, boolean addTitle) {
+        if (securityRequirements == null || securityRequirements.isEmpty()) return;
+
+        TableImpl securityRequirementsTable = new TableImpl(node, new HashMap<>(), new ArrayList<>());
+        securityRequirementsTable.setOption("header");
+        securityRequirementsTable.setAttribute("caption", "", true);
+        securityRequirementsTable.setAttribute("cols", ".^3a,.^4a,.^13a", true);
+        if (addTitle) {
+            securityRequirementsTable.setTitle(TABLE_TITLE_SECURITY);
+        }
+        securityRequirementsTable.setHeaderRow(TABLE_HEADER_TYPE, TABLE_HEADER_NAME, TABLE_HEADER_SCOPES);
+
+        securityRequirements.forEach(securityRequirement -> {
+            securityRequirement.forEach((name, scopes) -> {
+                securityRequirementsTable.addRow(
+                        generateInnerDoc(securityRequirementsTable, boldUnconstrained(scopes.isEmpty() ? "apiKey" : "oauth2")),
+                        generateInnerDoc(securityRequirementsTable, name),
+                        generateInnerDoc(securityRequirementsTable, String.join(", ", scopes))
+                );
+            });
+        });
+        node.append(securityRequirementsTable);
     }
 
     public static String superScript(String str) {

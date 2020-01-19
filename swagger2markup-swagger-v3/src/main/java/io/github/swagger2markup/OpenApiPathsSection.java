@@ -27,6 +27,7 @@ public class OpenApiPathsSection {
                 appendParameters(operationSection, operation.getParameters());
                 appendResponses(operationSection, operation.getResponses());
                 appendServersSection(operationSection, operation.getServers());
+                appendSecurityRequirementTable(operationSection, operation.getSecurity(), true);
                 allPathsSection.append(operationSection);
             }));
 

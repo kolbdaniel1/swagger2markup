@@ -14,6 +14,7 @@ public class OpenApi2AsciiDoc {
         OpenApiServerSection.appendServersSection(rootDocument, openAPI.getServers());
         OpenApiPathsSection.appendPathSection(rootDocument, openAPI.getPaths());
         OpenApiComponentsSection.appendComponentsSection(rootDocument, openAPI.getComponents());
+        OpenApiSecuritySection.appendSecurityRequirementSection(rootDocument, openAPI.getSecurity());
         return rootDocument.convert();
     }
 }
